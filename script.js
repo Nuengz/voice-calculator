@@ -16,15 +16,15 @@ if (!SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = 'th-TH';
     recognition.continuous = false;
-    recognition.interimResults = false; 
+    recognition.interimResults = false;
 
-    
+
     recognition.onerror = (event) => {
         console.error(event.error);
         micBtn.classList.remove('listening');
         isListening = false;
-        
-        if(event.error === 'not-allowed') {
+
+        if (event.error === 'not-allowed') {
             transcriptEl.innerText = " กรุณากด 'อนุญาต' ให้ใช้ไมโครโฟน";
             alert("คุณต้องกด Allow/อนุญาต ให้ใช้ไมค์ก่อนครับ");
         } else if (event.error === 'no-speech') {
@@ -53,7 +53,7 @@ function toggleMic() {
 
     if (!isListening) {
         try {
-           
+
             let unlockSound = new SpeechSynthesisUtterance("");
             window.speechSynthesis.speak(unlockSound);
 
@@ -71,28 +71,38 @@ function toggleMic() {
 }
 
 function calculateMoney(text) {
+    
     let cleanText = text
         .replace(/หนึ่ง/g, '1').replace(/สอง/g, '2').replace(/สาม/g, '3')
         .replace(/สี่/g, '4').replace(/ห้า/g, '5').replace(/หก/g, '6')
         .replace(/เจ็ด/g, '7').replace(/แปด/g, '8').replace(/เก้า/g, '9')
         .replace(/ศูนย์/g, '0');
 
+    
     cleanText = cleanText.replace(/จ่าย|รับ|ให้/g, '|');
 
+ 
     cleanText = cleanText
-        .replace(/มา/g, '')     
-        .replace(/บาท/g, '')    
+        .replace(/มา/g, '')
+        .replace(/บาท/g, '')
         .replace(/ครับ/g, '').replace(/ค่ะ/g, '')
-        .replace(/ทอน/g, '')        
-        .replace(/เท่าไหร่/g, '')   
-        .replace(/เท่าไร/g, '')     
-        .replace(/กี่บาท/g, '')     
-        .replace(/,/g, '')      
-        .replace(/ /g, '');     
+        .replace(/ทอน/g, '')
+        .replace(/เท่าไหร่/g, '')
+        .replace(/เท่าไร/g, '')
+        .replace(/กี่บาท/g, '')
+        .replace(/,/g, '')
+        .replace(/ /g, '');
+
 
     cleanText = cleanText
-        .replace(/บวก/g, '+').replace(/ลบ/g, '-').replace(/ลด/g, '-').replace(/หัก/g, '-')
-        .replace(/คูณ/g, '*').replace(/หาร/g, '/')
+        .replace(/บวก/g, '+')
+        .replace(/ลบ|ลด|หัก/g, '-')
+
+        .replace(/คูณ|คุณ|x|X|×/g, '*')
+
+        .replace(/หาร|หาน|÷/g, '/')
+
+
         .replace(/(\d+(\.\d+)?)ล้าน/g, '$1*1000000+')
         .replace(/(\d+(\.\d+)?)แสน/g, '$1*100000+')
         .replace(/(\d+(\.\d+)?)หมื่น/g, '$1*10000+')
@@ -106,13 +116,18 @@ function calculateMoney(text) {
     try {
         const safeEval = (str) => {
             if (!str) return 0;
-            if (['+', '-', '*', '/'].includes(str.slice(-1))) str = str.slice(0, -1);
+
+            while (['+', '-', '*', '/'].includes(str.slice(-1))) {
+                str = str.slice(0, -1);
+            }
             return eval(str);
         };
+
 
         let totalPrice = safeEval(parts[0]);
         if (totalPrice < 0) totalPrice = 0;
         totalEl.innerText = totalPrice.toLocaleString();
+
 
         if (parts.length > 1 && parts[1].length > 0) {
             let cashAmount = safeEval(parts[1]);
@@ -130,15 +145,19 @@ function calculateMoney(text) {
                 speak(`ทอน ${change} บาท`);
             }
         } else {
+
             cashEl.innerText = "-";
             changeEl.innerText = "-";
             changeEl.classList.remove('missing-money');
-            speak(`รวม ${totalPrice} บาท`);
+
+            if (cleanText.includes('+') || cleanText.includes('-') || cleanText.includes('*') || cleanText.includes('/')) {
+                speak(`รวม ${totalPrice} บาท`);
+            }
         }
 
     } catch (e) {
         console.error(e);
-        transcriptEl.innerText = " ฟังไม่เข้าใจ (" + cleanText + ")";
+        transcriptEl.innerText = " คำนวณไม่ได้ (" + cleanText + ")";
     }
 }
 
