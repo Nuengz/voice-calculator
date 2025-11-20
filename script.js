@@ -7,7 +7,7 @@ const changeEl = document.getElementById('change-value');
 let isListening = false;
 let recognition;
 
-// --- ส่วนเช็คว่ามือถือเครื่องนี้รองรับไหม ---
+
 if (!SpeechRecognition) {
     transcriptEl.innerText = " มือถือรุ่นนี้ไม่รองรับระบบสั่งงานด้วยเสียงครับ (ลองเปลี่ยน Browser)";
     micBtn.style.background = "gray";
@@ -16,9 +16,9 @@ if (!SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = 'th-TH';
     recognition.continuous = false;
-    recognition.interimResults = false; // แก้เป็น false เพื่อลดความงง
+    recognition.interimResults = false; 
 
-    // --- ส่วนฟ้อง Error (สำคัญมาก) ---
+    
     recognition.onerror = (event) => {
         console.error(event.error);
         micBtn.classList.remove('listening');
@@ -53,7 +53,7 @@ function toggleMic() {
 
     if (!isListening) {
         try {
-            // ปลดล็อกเสียงพูด (สำหรับ iPhone/Android)
+           
             let unlockSound = new SpeechSynthesisUtterance("");
             window.speechSynthesis.speak(unlockSound);
 
