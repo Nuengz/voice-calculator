@@ -1,37 +1,74 @@
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.lang = 'th-TH';
-recognition.continuous = false;
-
 const micBtn = document.querySelector('.mic-btn');
 const transcriptEl = document.getElementById('transcript');
 const totalEl = document.getElementById('total-value');
 const cashEl = document.getElementById('cash-value');
 const changeEl = document.getElementById('change-value');
 let isListening = false;
+let recognition;
+
+// --- ส่วนเช็คว่ามือถือเครื่องนี้รองรับไหม ---
+if (!SpeechRecognition) {
+    transcriptEl.innerText = " มือถือรุ่นนี้ไม่รองรับระบบสั่งงานด้วยเสียงครับ (ลองเปลี่ยน Browser)";
+    micBtn.style.background = "gray";
+    micBtn.disabled = true;
+} else {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'th-TH';
+    recognition.continuous = false;
+    recognition.interimResults = false; // แก้เป็น false เพื่อลดความงง
+
+    // --- ส่วนฟ้อง Error (สำคัญมาก) ---
+    recognition.onerror = (event) => {
+        console.error(event.error);
+        micBtn.classList.remove('listening');
+        isListening = false;
+        
+        if(event.error === 'not-allowed') {
+            transcriptEl.innerText = " กรุณากด 'อนุญาต' ให้ใช้ไมโครโฟน";
+            alert("คุณต้องกด Allow/อนุญาต ให้ใช้ไมค์ก่อนครับ");
+        } else if (event.error === 'no-speech') {
+            transcriptEl.innerText = " ไม่ได้ยินเสียง (เงียบเกินไป)";
+        } else if (event.error === 'network') {
+            transcriptEl.innerText = " ต้องต่อเน็ตถึงจะใช้ได้ครับ";
+        } else {
+            transcriptEl.innerText = " Error: " + event.error;
+        }
+    };
+
+    recognition.onend = () => {
+        micBtn.classList.remove('listening');
+        isListening = false;
+    };
+
+    recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        transcriptEl.innerText = ` "${text}"`;
+        calculateMoney(text);
+    };
+}
 
 function toggleMic() {
+    if (!recognition) return;
+
     if (!isListening) {
-        recognition.start();
-        micBtn.classList.add('listening');
-        transcriptEl.innerText = "กำลังรับฟัง...";
-        isListening = true;
+        try {
+            // ปลดล็อกเสียงพูด (สำหรับ iPhone/Android)
+            let unlockSound = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(unlockSound);
+
+            recognition.start();
+            micBtn.classList.add('listening');
+            transcriptEl.innerText = "กำลังรับฟัง... (พูดมาเลย)";
+            isListening = true;
+        } catch (e) {
+            transcriptEl.innerText = " กดไมค์ไม่ได้: " + e.message;
+        }
     } else {
         recognition.stop();
         isListening = false;
     }
 }
-
-recognition.onend = () => {
-    micBtn.classList.remove('listening');
-    isListening = false;
-};
-
-recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    transcriptEl.innerText = text;
-    calculateMoney(text);
-};
 
 function calculateMoney(text) {
     let cleanText = text
@@ -101,7 +138,7 @@ function calculateMoney(text) {
 
     } catch (e) {
         console.error(e);
-        transcriptEl.innerText = "ฟังไม่เข้าใจ (" + cleanText + ")";
+        transcriptEl.innerText = " ฟังไม่เข้าใจ (" + cleanText + ")";
     }
 }
 
